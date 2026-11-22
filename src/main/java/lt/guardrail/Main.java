@@ -15,7 +15,17 @@ public class Main {
         CreditService creditService = new CreditService(repository);
         PromptInjectionFilter filter = new PromptInjectionFilter();
         MaskingService maskingService = new MaskingService();
-        LlmClient client = new MockLlmClient();
+        String apiKey = System.getenv("GEMINI_API_KEY");
+
+        LlmClient client;
+
+        if (apiKey == null || apiKey.isBlank()) {
+            client = new MockLlmClient();
+            System.out.println("Mode: Mock");
+        } else {
+            client = new GeminiClient(apiKey);
+            System.out.println("Mode: Gemini");
+        }
 
         GuardrailService guardrailService = new GuardrailService(
                 creditService,
@@ -24,16 +34,15 @@ public class Main {
                 client
         );
 
-        LlmModel model = new LlmModel("gpt-4o", 5);
+        LlmModel model = new LlmModel("gemini-3.1-flash-lite", 5);
 
         System.out.println("Credits before: " +
                 repository.findUser(1, 1).getCredits());
 
         String response = guardrailService.processRequest(
-                1,
-                1,
-                model,
-                "Write an email to jonas@gmail.com"
+                1, 1, model,
+                "Write a short welcome email to jonas@example.com. " +
+                        "Include the exact recipient address in the answer."
         );
 
         System.out.println(response);
